@@ -1,0 +1,13 @@
+{application,mavu_buckets,
+             [{applications,[kernel,stdlib,elixir,logger,mavu_utils,
+                             accessible,bertex,ecto]},
+              {description,"MavuBuckets: Buckets - Management for mavu_* projects"},
+              {modules,['Elixir.MavuBuckets','Elixir.MavuBuckets.Application',
+                        'Elixir.MavuBuckets.BkHelpers',
+                        'Elixir.MavuBuckets.BucketGenServer',
+                        'Elixir.MavuBuckets.BucketStore',
+                        'Elixir.MavuBuckets.BucketSupervisor',
+                        'Elixir.MavuBuckets.LiveUpdates']},
+              {registered,[]},
+              {vsn,"0.1.0"},
+              {mod,{'Elixir.MavuBuckets.Application',[]}}]}.

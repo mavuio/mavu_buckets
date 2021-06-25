@@ -1,0 +1,10 @@
+{application,bertex,
+             [{applications,[kernel,stdlib,elixir]},
+              {description,"  Elixir BERT encoder/decoder\n"},
+              {modules,['Elixir.Bertex','Elixir.Bertex.Bert',
+                        'Elixir.Bertex.Bert.Any','Elixir.Bertex.Bert.Atom',
+                        'Elixir.Bertex.Bert.HashDict',
+                        'Elixir.Bertex.Bert.List','Elixir.Bertex.Bert.Map',
+                        'Elixir.Bertex.Bert.Tuple']},
+              {registered,[]},
+              {vsn,"1.3.0"}]}.
