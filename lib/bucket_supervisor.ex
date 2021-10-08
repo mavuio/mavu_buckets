@@ -44,7 +44,7 @@ defmodule MavuBuckets.BucketSupervisor do
     case DynamicSupervisor.start_child(__MODULE__, spec) do
       {:ok, pid} ->
         pid
-        |> MavuUtils.log("created child for #{bkid} with PID: ")
+        |> MavuUtils.log("created child for #{bkid} with PID: ", :debug)
 
         {:ok, pid}
 
