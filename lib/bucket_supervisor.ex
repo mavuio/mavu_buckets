@@ -1,7 +1,6 @@
 defmodule MavuBuckets.BucketSupervisor do
   use DynamicSupervisor
   alias MavuBuckets.BucketGenServer
-  alias MavuBuckets.BkHelpers
   @registry :mavu_buckets_registry
 
   def start_link(_arg),
@@ -45,7 +44,7 @@ defmodule MavuBuckets.BucketSupervisor do
     case DynamicSupervisor.start_child(__MODULE__, spec) do
       {:ok, pid} ->
         pid
-        |> BkHelpers.log("created child for #{bkid} with PID: ")
+        |> MavuUtils.log("created child for #{bkid} with PID: ")
 
         {:ok, pid}
 

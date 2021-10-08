@@ -5,14 +5,11 @@ defmodule MavuBuckets.BucketGenServer do
   alias MavuBuckets.LiveUpdates
   alias MavuBuckets.BucketStore
 
-  alias MavuBuckets.BkHelpers
-
   import MavuBuckets, only: [get_conf_val: 2]
 
   @registry :mavu_buckets_registry
 
   defstruct bkid: nil,
-            email: nil,
             data: %{}
 
   use Accessible
@@ -23,29 +20,30 @@ defmodule MavuBuckets.BucketGenServer do
 
   def stop(bkid), do: GenServer.cast(via_tuple(bkid), :stop)
 
-  def get_data(bkid), do: GenServer.call(get_pid(bkid), :get_data)
+  def get_data(bkid, conf \\ []),
+    do: GenServer.call(get_pid(bkid), {:get_data, conf |> Enum.into(%{})})
 
-  def get_value(bkid, key, default \\ nil)
+  def get_value(bkid, key, default \\ nil, conf \\ [])
 
-  def get_value(nil, _, _), do: nil
+  def get_value(nil, _, _, _), do: nil
 
-  def get_value(bkid, key, default) when is_binary(bkid) and is_binary(key),
-    do: GenServer.call(get_pid(bkid), {:get_value, key, default})
+  def get_value(bkid, key, default, conf) when is_binary(bkid) and is_binary(key),
+    do: GenServer.call(get_pid(bkid), {:get_value, key, default, conf |> Enum.into(%{})})
 
-  def set_value(bkid, key, value) when is_binary(bkid) and is_binary(key),
-    do: GenServer.call(get_pid(bkid), {:set_value, key, value})
+  def set_value(bkid, key, value, conf \\ []) when is_binary(bkid) and is_binary(key),
+    do: GenServer.call(get_pid(bkid), {:set_value, key, value, conf |> Enum.into(%{})})
 
-  def update_value(bkid, key, callback)
+  def update_value(bkid, key, callback, conf \\ [])
       when is_binary(bkid) and is_binary(key) and is_function(callback, 1),
-      do: GenServer.call(get_pid(bkid), {:update_value, key, callback})
+      do: GenServer.call(get_pid(bkid), {:update_value, key, callback, conf |> Enum.into(%{})})
 
-  def set_data(bkid, data) when is_binary(bkid) and is_map(data),
-    do: GenServer.call(get_pid(bkid), {:set_data, data})
+  def set_data(bkid, data, conf \\ []) when is_binary(bkid) and is_map(data),
+    do: GenServer.call(get_pid(bkid), {:set_data, data, conf |> Enum.into(%{})})
 
   ## Callbacks
   @impl true
   def init(bkid) do
-    BkHelpers.log("❖ init bucket '#{bkid}'")
+    MavuUtils.log("❖ init bucket '#{bkid}'")
     send(self(), :fetch_data)
     {:ok, %__MODULE__{bkid: bkid}}
   end
@@ -64,12 +62,12 @@ defmodule MavuBuckets.BucketGenServer do
     do: raise(RuntimeError, message: "Error, Server #{bkid} has crashed")
 
   @impl true
-  def handle_call(:get_data, _from, state) do
+  def handle_call({:get_data, conf}, _from, state) when is_map(conf) do
     response = state.data
     {:reply, response, state}
   end
 
-  def handle_call({:get_value, key, default}, _from, state) do
+  def handle_call({:get_value, key, default, conf}, _from, state) when is_map(conf) do
     response =
       get_in(state, [:data | get_key_parts(key)])
       |> case do
@@ -80,7 +78,7 @@ defmodule MavuBuckets.BucketGenServer do
     {:reply, response, state}
   end
 
-  def handle_call({:set_value, key, value}, _from, old_state) do
+  def handle_call({:set_value, key, value, conf}, _from, old_state) when is_map(conf) do
     # value |> IO.inspect(label: "mwuits-debug 2020-03-15_12:05 visitor-session SET ")
 
     state =
@@ -97,17 +95,17 @@ defmodule MavuBuckets.BucketGenServer do
     if(state !== old_state) do
       LiveUpdates.notify_live_view(
         state.bkid,
-        {:bucket, [key, :updated], value}
+        {:mavu_bucket, state.bkid, :set_value, value}
       )
 
-      save_data_to_db(state.bkid, state.data)
+      save_data_to_db(state.bkid, state.data, conf)
     end
 
     response = :ok
     {:reply, response, state}
   end
 
-  def handle_call({:update_value, key, callback}, _from, old_state) do
+  def handle_call({:update_value, key, callback, conf}, _from, old_state) when is_map(conf) do
     # value |> IO.inspect(label: "mwuits-debug 2020-03-15_12:05 visitor-session SET ")
 
     state =
@@ -124,26 +122,26 @@ defmodule MavuBuckets.BucketGenServer do
     if(state !== old_state) do
       LiveUpdates.notify_live_view(
         state.bkid,
-        {:bucket, [key, :updated], "function"}
+        {:mavu_bucket, state.bkid, :update_value, nil}
       )
 
-      save_data_to_db(state.bkid, state.data)
+      save_data_to_db(state.bkid, state.data, conf)
     end
 
     response = :ok
     {:reply, response, state}
   end
 
-  def handle_call({:set_data, data}, _from, old_state) do
+  def handle_call({:set_data, data, conf}, _from, old_state) when is_map(conf) do
     state = put_in(old_state, [:data], data)
 
     if(state !== old_state) do
       LiveUpdates.notify_live_view(
         state.bkid,
-        {:bucket, [:all, :updated], nil}
+        {:mavu_bucket, state.bkid, :set_data, nil}
       )
 
-      save_data_to_db(state.bkid, state.data)
+      save_data_to_db(state.bkid, state.data, conf)
     end
 
     response = :ok
@@ -170,7 +168,7 @@ defmodule MavuBuckets.BucketGenServer do
     reason
     |> IO.inspect(label: "mwuits-debug 2020-03-18_11:24 Visitor Session  exits with reason ")
 
-    BkHelpers.log(
+    MavuUtils.log(
       reason,
       "mwuits-debug 2018-08-10_22:15 Visitor Session  exits with reason",
       :warn
@@ -201,12 +199,16 @@ defmodule MavuBuckets.BucketGenServer do
     end
   end
 
-  def save_data_to_db(bkid, data) do
+  def save_data_to_db(_bkid, _data, %{skip_db: true}), do: :ok
+
+  def save_data_to_db(bkid, data, conf) when is_map(conf) do
     case repo().get_by(BucketStore, bkid: bkid) do
       nil -> %BucketStore{bkid: bkid}
       rec -> rec
     end
     |> BucketStore.changeset(%{state: data |> Bertex.encode()})
     |> repo().insert_or_update()
+
+    :ok
   end
 end

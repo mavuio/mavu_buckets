@@ -23,21 +23,25 @@ defmodule MavuBuckets do
   alias MavuBuckets.BucketStore
 
   alias MavuBuckets.BucketGenServer
+  alias MavuBuckets.LiveUpdates
 
   defp repo() do
     MyApp.Repo
   end
 
   # public API:
-  defdelegate get_data(bkid), to: BucketGenServer
+  defdelegate get_data(bkid, conf \\ []), to: BucketGenServer
 
-  defdelegate set_data(bkid, data), to: BucketGenServer
+  defdelegate set_data(bkid, data, conf \\ []), to: BucketGenServer
 
-  defdelegate set_value(bkid, key, value), to: BucketGenServer
+  defdelegate set_value(bkid, key, value, conf \\ []), to: BucketGenServer
 
-  defdelegate update_value(bkid, key, callback), to: BucketGenServer
+  defdelegate update_value(bkid, key, callback, conf \\ []), to: BucketGenServer
 
-  defdelegate get_value(bkid, key, default \\ nil), to: BucketGenServer
+  defdelegate get_value(bkid, key, default \\ nil, conf \\ []), to: BucketGenServer
+
+  defdelegate subscribe_live_view(), to: LiveUpdates
+  defdelegate subscribe_live_view(bkid), to: LiveUpdates
 
   def merge_into(bkid, key, values) when is_map(values) do
     merged =
@@ -55,7 +59,7 @@ defmodule MavuBuckets do
     archive_data = data
     new_data = data |> Map.merge(empty_data_record)
 
-    BucketGenServer.save_data_to_db(archive_bkid, archive_data)
+    BucketGenServer.save_data_to_db(archive_bkid, archive_data, %{})
     set_data(bkid, new_data)
   end
 
