@@ -5,12 +5,12 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.24.2">
-    <meta name="project" content="MavuBuckets v0.1.3">
+    <meta name="project" content="MavuBuckets v0.1.4">
 
-    <title>MavuBuckets.BucketGenServer — MavuBuckets v0.1.3</title>
+    <title>MavuBuckets.BucketGenServer — MavuBuckets v0.1.4</title>
     <link rel="stylesheet" href="dist/elixir-a172fe91e725dcb259e2.css" />
 
-    <script src="dist/sidebar_items-fb1b8202e9.js"></script>
+    <script src="dist/sidebar_items-d5e7befe98.js"></script>
 
       <script src="docs_config.js"></script>
 
@@ -58,7 +58,7 @@
 MavuBuckets
       </a>
       <strong class="sidebar-projectVersion">
-        v0.1.3
+        v0.1.4
       </strong>
     </div>
 
@@ -80,7 +80,7 @@ MavuBuckets
     <div id="content" class="content-inner">
 
       <h1>
-MavuBuckets.BucketGenServer <small class="app-vsn">(MavuBuckets v0.1.3)</small>
+MavuBuckets.BucketGenServer <small class="app-vsn">(MavuBuckets v0.1.4)</small>
 
           <a href="https://github.com/mavuio/mavu_buckets/blob/master/lib/bucket_gen_server.ex#L1" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
@@ -136,14 +136,14 @@ MavuBuckets.BucketGenServer <small class="app-vsn">(MavuBuckets v0.1.3)</small>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#get_data/1">get_data(bkid)</a>
+    <a href="#get_data/2">get_data(bkid, conf \\ [])</a>
 
   </div>
 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#get_value/3">get_value(bkid, key, default \\ nil)</a>
+    <a href="#get_value/4">get_value(bkid, key, default \\ nil, conf \\ [])</a>
 
   </div>
 
@@ -166,21 +166,21 @@ MavuBuckets.BucketGenServer <small class="app-vsn">(MavuBuckets v0.1.3)</small>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#save_data_to_db/2">save_data_to_db(bkid, data)</a>
+    <a href="#save_data_to_db/3">save_data_to_db(bkid, data, conf)</a>
 
   </div>
 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#set_data/2">set_data(bkid, data)</a>
+    <a href="#set_data/3">set_data(bkid, data, conf \\ [])</a>
 
   </div>
 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#set_value/3">set_value(bkid, key, value)</a>
+    <a href="#set_value/4">set_value(bkid, key, value, conf \\ [])</a>
 
   </div>
 
@@ -201,7 +201,7 @@ MavuBuckets.BucketGenServer <small class="app-vsn">(MavuBuckets v0.1.3)</small>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#update_value/3">update_value(bkid, key, callback)</a>
+    <a href="#update_value/4">update_value(bkid, key, callback, conf \\ [])</a>
 
   </div>
 
@@ -252,7 +252,7 @@ Functions
     </a>
     <h1 class="signature">delete(struct, key)</h1>
 
-      <a href="https://github.com/mavuio/mavu_buckets/blob/master/lib/bucket_gen_server.ex#L18" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/mavuio/mavu_buckets/blob/master/lib/bucket_gen_server.ex#L15" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -274,7 +274,7 @@ Functions
     </a>
     <h1 class="signature">fetch_data_from_db(bkid)</h1>
 
-      <a href="https://github.com/mavuio/mavu_buckets/blob/master/lib/bucket_gen_server.ex#L197" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/mavuio/mavu_buckets/blob/master/lib/bucket_gen_server.ex#L195" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -298,7 +298,7 @@ Functions
     </a>
     <h1 class="signature">get(struct, key, default \\ nil)</h1>
 
-      <a href="https://github.com/mavuio/mavu_buckets/blob/master/lib/bucket_gen_server.ex#L18" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/mavuio/mavu_buckets/blob/master/lib/bucket_gen_server.ex#L15" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -311,16 +311,18 @@ Functions
 
   </section>
 </section>
-<section class="detail" id="get_data/1">
+<section class="detail" id="get_data/2">
+
+    <span id="get_data/1"></span>
 
   <div class="detail-header">
-    <a href="#get_data/1" class="detail-link" title="Link to this function">
+    <a href="#get_data/2" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">get_data(bkid)</h1>
+    <h1 class="signature">get_data(bkid, conf \\ [])</h1>
 
-      <a href="https://github.com/mavuio/mavu_buckets/blob/master/lib/bucket_gen_server.ex#L26" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/mavuio/mavu_buckets/blob/master/lib/bucket_gen_server.ex#L23" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -333,18 +335,20 @@ Functions
 
   </section>
 </section>
-<section class="detail" id="get_value/3">
+<section class="detail" id="get_value/4">
 
     <span id="get_value/2"></span>
 
+    <span id="get_value/3"></span>
+
   <div class="detail-header">
-    <a href="#get_value/3" class="detail-link" title="Link to this function">
+    <a href="#get_value/4" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">get_value(bkid, key, default \\ nil)</h1>
+    <h1 class="signature">get_value(bkid, key, default \\ nil, conf \\ [])</h1>
 
-      <a href="https://github.com/mavuio/mavu_buckets/blob/master/lib/bucket_gen_server.ex#L28" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/mavuio/mavu_buckets/blob/master/lib/bucket_gen_server.ex#L26" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -366,7 +370,7 @@ Functions
     </a>
     <h1 class="signature">handle_info(msg, state)</h1>
 
-      <a href="https://github.com/mavuio/mavu_buckets/blob/master/lib/bucket_gen_server.ex#L157" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/mavuio/mavu_buckets/blob/master/lib/bucket_gen_server.ex#L155" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -388,7 +392,7 @@ Functions
     </a>
     <h1 class="signature">put(struct, key, val)</h1>
 
-      <a href="https://github.com/mavuio/mavu_buckets/blob/master/lib/bucket_gen_server.ex#L18" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/mavuio/mavu_buckets/blob/master/lib/bucket_gen_server.ex#L15" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -401,16 +405,16 @@ Functions
 
   </section>
 </section>
-<section class="detail" id="save_data_to_db/2">
+<section class="detail" id="save_data_to_db/3">
 
   <div class="detail-header">
-    <a href="#save_data_to_db/2" class="detail-link" title="Link to this function">
+    <a href="#save_data_to_db/3" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">save_data_to_db(bkid, data)</h1>
+    <h1 class="signature">save_data_to_db(bkid, data, conf)</h1>
 
-      <a href="https://github.com/mavuio/mavu_buckets/blob/master/lib/bucket_gen_server.ex#L204" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/mavuio/mavu_buckets/blob/master/lib/bucket_gen_server.ex#L202" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -423,16 +427,18 @@ Functions
 
   </section>
 </section>
-<section class="detail" id="set_data/2">
+<section class="detail" id="set_data/3">
+
+    <span id="set_data/2"></span>
 
   <div class="detail-header">
-    <a href="#set_data/2" class="detail-link" title="Link to this function">
+    <a href="#set_data/3" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">set_data(bkid, data)</h1>
+    <h1 class="signature">set_data(bkid, data, conf \\ [])</h1>
 
-      <a href="https://github.com/mavuio/mavu_buckets/blob/master/lib/bucket_gen_server.ex#L42" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/mavuio/mavu_buckets/blob/master/lib/bucket_gen_server.ex#L40" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -445,16 +451,18 @@ Functions
 
   </section>
 </section>
-<section class="detail" id="set_value/3">
+<section class="detail" id="set_value/4">
+
+    <span id="set_value/3"></span>
 
   <div class="detail-header">
-    <a href="#set_value/3" class="detail-link" title="Link to this function">
+    <a href="#set_value/4" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">set_value(bkid, key, value)</h1>
+    <h1 class="signature">set_value(bkid, key, value, conf \\ [])</h1>
 
-      <a href="https://github.com/mavuio/mavu_buckets/blob/master/lib/bucket_gen_server.ex#L35" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/mavuio/mavu_buckets/blob/master/lib/bucket_gen_server.ex#L33" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -476,7 +484,7 @@ Functions
     </a>
     <h1 class="signature">start_link(bkid)</h1>
 
-      <a href="https://github.com/mavuio/mavu_buckets/blob/master/lib/bucket_gen_server.ex#L21" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/mavuio/mavu_buckets/blob/master/lib/bucket_gen_server.ex#L18" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -498,7 +506,7 @@ Functions
     </a>
     <h1 class="signature">stop(bkid)</h1>
 
-      <a href="https://github.com/mavuio/mavu_buckets/blob/master/lib/bucket_gen_server.ex#L24" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/mavuio/mavu_buckets/blob/master/lib/bucket_gen_server.ex#L21" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -511,16 +519,18 @@ Functions
 
   </section>
 </section>
-<section class="detail" id="update_value/3">
+<section class="detail" id="update_value/4">
+
+    <span id="update_value/3"></span>
 
   <div class="detail-header">
-    <a href="#update_value/3" class="detail-link" title="Link to this function">
+    <a href="#update_value/4" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">update_value(bkid, key, callback)</h1>
+    <h1 class="signature">update_value(bkid, key, callback, conf \\ [])</h1>
 
-      <a href="https://github.com/mavuio/mavu_buckets/blob/master/lib/bucket_gen_server.ex#L38" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/mavuio/mavu_buckets/blob/master/lib/bucket_gen_server.ex#L36" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>

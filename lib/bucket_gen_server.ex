@@ -43,7 +43,7 @@ defmodule MavuBuckets.BucketGenServer do
   ## Callbacks
   @impl true
   def init(bkid) do
-    MavuUtils.log("❖ init bucket '#{bkid}'")
+    MavuUtils.log("❖ init bucket '#{bkid}'", :debug)
     send(self(), :fetch_data)
     {:ok, %__MODULE__{bkid: bkid}}
   end
