@@ -165,12 +165,9 @@ defmodule MavuBuckets.BucketGenServer do
 
   @impl true
   def terminate(reason, _state) do
-    reason
-    |> IO.inspect(label: "mwuits-debug 2020-03-18_11:24 Visitor Session  exits with reason ")
-
     MavuUtils.log(
       reason,
-      "mwuits-debug 2018-08-10_22:15 Visitor Session  exits with reason",
+      "#{__MODULE__} exits with reason",
       :warn
     )
   end

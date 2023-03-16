@@ -33,7 +33,8 @@ defmodule MavuBuckets.MixProject do
       {:accessible, ">= 0.2.0"},
       {:bertex, "~> 1.3"},
       {:ecto, ">= 3.0.0"},
-      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
+      {:phoenix_pubsub, "~> 2.1"}
     ]
   end
 
