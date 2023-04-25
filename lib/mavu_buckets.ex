@@ -71,33 +71,89 @@ defmodule MavuBuckets do
     |> repo().all()
   end
 
-  defmacro bucket_cache(bucket_name, key_name, opts \\ [], do: block) do
+  defmacro bucket_cache(bucket_name, key_name, opts, ttl, do: block) do
     quote do
-      res =
-        if MavuUtils.present?(unquote(opts)[:clear_cache]) or
-             MavuUtils.present?(unquote(opts)[:no_cache]) do
-          nil
-        else
-          MavuBuckets.get_value(unquote(bucket_name), unquote(key_name) |> to_string())
-        end
-
-      case res do
-        nil ->
+      MavuBuckets.cache_read(unquote(bucket_name), unquote(key_name), unquote(opts), unquote(ttl))
+      |> case do
+        {:miss, _, _} ->
           result = unquote(block)
 
-          unless MavuUtils.present?(unquote(opts)[:no_cache]) do
-            MavuBuckets.set_value(
-              unquote(bucket_name),
-              unquote(key_name) |> to_string(),
-              result
-            )
-          end
-
           result
+          |> MavuBuckets.cache_write(
+            unquote(bucket_name),
+            unquote(key_name),
+            unquote(opts),
+            unquote(ttl)
+          )
 
-        val ->
+        {:hit, _, val} ->
           val
       end
     end
   end
+
+  def cache_read(bucket_name, key_name, opts \\ [], ttl \\ nil)
+      when is_binary(bucket_name) and (is_atom(key_name) or is_binary(key_name)) and
+             is_list(opts) and (is_integer(ttl) or is_nil(ttl)) do
+    {type, info, value} =
+      if MavuUtils.true?(opts[:clear_cache]) or
+           MavuUtils.true?(opts[:no_cache]) do
+        {:miss, :clear_or_no_cache_given, nil}
+      else
+        {cachetime, value} =
+          MavuBuckets.get_value(bucket_name, key_name |> to_string(), :value_not_found)
+          |> decode_cache_time_from_value()
+
+        expires_in =
+          case {cachetime, ttl} do
+            {cachetime, ttl} when is_integer(cachetime) and is_integer(ttl) ->
+              cachetime + ttl - :os.system_time(:seconds)
+
+            _ ->
+              nil
+          end
+
+        cond do
+          value == :value_not_found -> {:miss, :value_not_found, nil}
+          cachetime == nil -> {:hit, :no_cachetime_stored, value}
+          ttl == nil -> {:hit, :no_ttl_given, value}
+          expires_in == nil -> {:hit, :expires_in_is_nil, value}
+          expires_in > 0 -> {:hit, {:expires_in, expires_in}, value}
+          MavuUtils.true?(opts[:cache_reuse]) -> {:hit, {:cache_reuse_forced, expires_in}, value}
+          expires_in <= 0 -> {:miss, {:expired_before, expires_in}, value}
+        end
+      end
+
+    if MavuUtils.true?(opts[:cache_debug]) do
+      {type, info, "value"} |> MavuUtils.log("bucket cache clcyan", :info)
+    end
+
+    {type, info, value}
+  end
+
+  def cache_write(result, bucket_name, key_name, opts \\ [], ttl \\ nil)
+      when is_binary(bucket_name) and (is_atom(key_name) or is_binary(key_name)) and
+             is_list(opts) and (is_integer(ttl) or is_nil(ttl)) do
+    if MavuUtils.false?(opts[:no_cache]) do
+      MavuBuckets.set_value(
+        bucket_name,
+        key_name |> to_string(),
+        result |> encode_cache_time_to_value()
+      )
+    end
+
+    result
+  end
+
+  defp encode_cache_time_to_value(value) do
+    {:cached_at, :os.system_time(:seconds), value}
+  end
+
+  defp decode_cache_time_from_value(_, default_cachetime \\ nil)
+
+  defp decode_cache_time_from_value({:cached_at, cachetime, value}, _default_cachetime) do
+    {cachetime, value}
+  end
+
+  defp decode_cache_time_from_value(value, default_cachetime), do: {default_cachetime, value}
 end
