@@ -1,7 +1,7 @@
 defmodule MavuBuckets.MixProject do
   use Mix.Project
 
-  @version "0.1.8"
+  @version "1.0.1"
   def project do
     [
       app: :mavu_buckets,
@@ -29,7 +29,7 @@ defmodule MavuBuckets.MixProject do
     [
       # {:dep_from_hexpm, "~> 0.3.0"},
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
-      {:mavu_utils, "~> 0.1.0"},
+      {:mavu_utils, "~> 1.0"},
       {:accessible, ">= 0.2.0"},
       {:bertex, "~> 1.3"},
       {:ecto, ">= 3.0.0"},
