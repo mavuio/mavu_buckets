@@ -189,23 +189,37 @@ defmodule MavuBuckets.BucketGenServer do
     key_str |> String.split(["."])
   end
 
-  def fetch_data_from_db(bkid) do
-    case repo().get_by(BucketStore, bkid: bkid) do
-      nil -> nil
-      rec -> rec.state |> Bertex.decode()
+  def fetch_data_from_db(bkid, conf \\ []) do
+    repo = repo(conf)
+
+    if repo_running?(repo) do
+      case repo.get_by(BucketStore, bkid: bkid) do
+        nil -> nil
+        rec -> rec.state |> Bertex.decode()
+      end
+    else
+      nil
     end
   end
 
   def save_data_to_db(_bkid, _data, %{skip_db: true}), do: :ok
 
   def save_data_to_db(bkid, data, conf) when is_map(conf) do
-    case repo().get_by(BucketStore, bkid: bkid) do
-      nil -> %BucketStore{bkid: bkid}
-      rec -> rec
+    repo = repo(conf)
+
+    if repo_running?(repo) do
+      case repo.get_by(BucketStore, bkid: bkid) do
+        nil -> %BucketStore{bkid: bkid}
+        rec -> rec
+      end
+      |> BucketStore.changeset(%{state: data |> Bertex.encode()})
+      |> repo.insert_or_update()
     end
-    |> BucketStore.changeset(%{state: data |> Bertex.encode()})
-    |> repo().insert_or_update()
 
     :ok
+  end
+
+  def repo_running?(repo) do
+    Enum.member?(Ecto.Repo.all_running(), repo)
   end
 end
