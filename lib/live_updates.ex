@@ -23,7 +23,6 @@ defmodule MavuBuckets.LiveUpdates do
 
   @doc "notify for specific bucket"
   def notify_live_view(bkid, message) do
-    "" |> MavuUtils.log("notify_live_view bucket:#{bkid}", :debug)
     Phoenix.PubSub.broadcast(pubsub(), topic(bkid), message)
   end
 
