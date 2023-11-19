@@ -1,7 +1,7 @@
 defmodule MavuBuckets.MixProject do
   use Mix.Project
 
-  @version "1.0.4"
+  @version "1.1.1"
   def project do
     [
       app: :mavu_buckets,

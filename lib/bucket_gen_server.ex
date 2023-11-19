@@ -10,11 +10,14 @@ defmodule MavuBuckets.BucketGenServer do
   @registry :mavu_buckets_registry
   @persist_interval_ms 2000
   @protect_for_s 3600
+  @default_lifetime_ms 3600_000
 
   defstruct bkid: nil,
             data: %{},
             last_persist_ts: 0,
+            last_interaction_ts: 0,
             persist_timer: nil,
+            idle_timer: nil,
             protect_for_s: @protect_for_s,
             persistence_level: 10
 
@@ -46,6 +49,15 @@ defmodule MavuBuckets.BucketGenServer do
   def set_data(bkid, data, conf \\ []) when is_binary(bkid) and is_map(data),
     do: GenServer.call(get_pid(bkid), {:set_data, data, conf |> Enum.into(%{})})
 
+  ## conf
+  def lifetime_ms(_state = %{persistence_level: 100}) do
+    :infinity
+  end
+
+  def lifetime_ms(_state) do
+    @default_lifetime_ms
+  end
+
   ## Callbacks
   @impl true
   def init(bkid) do
@@ -70,7 +82,7 @@ defmodule MavuBuckets.BucketGenServer do
   @impl true
   def handle_call({:get_data, conf}, _from, state) when is_map(conf) do
     response = state.data
-    {:reply, response, state}
+    {:reply, response, state |> record_activity_in_state()}
   end
 
   def handle_call({:get_value, key, default, conf}, _from, state) when is_map(conf) do
@@ -81,7 +93,7 @@ defmodule MavuBuckets.BucketGenServer do
         val -> val
       end
 
-    {:reply, response, state}
+    {:reply, response, state |> record_activity_in_state()}
   end
 
   def handle_call({:set_value, key, value, conf}, _from, old_state) when is_map(conf) do
@@ -112,7 +124,7 @@ defmodule MavuBuckets.BucketGenServer do
       end
 
     response = :ok
-    {:reply, response, state}
+    {:reply, response, state |> record_activity_in_state()}
   end
 
   def handle_call({:update_value, key, callback, conf}, _from, old_state) when is_map(conf) do
@@ -143,7 +155,7 @@ defmodule MavuBuckets.BucketGenServer do
       end
 
     response = :ok
-    {:reply, response, state}
+    {:reply, response, state |> record_activity_in_state()}
   end
 
   def handle_call({:set_data, data, conf}, _from, old_state) when is_map(conf) do
@@ -164,7 +176,7 @@ defmodule MavuBuckets.BucketGenServer do
       end
 
     response = :ok
-    {:reply, response, state}
+    {:reply, response, state |> record_activity_in_state()}
   end
 
   @doc """
@@ -175,6 +187,24 @@ defmodule MavuBuckets.BucketGenServer do
   def handle_info({:persist_dirty_data, conf, _call_ts}, state) do
     # MavuUtils.log("persist_dirty_data timer called #clcyan", :info)
     {:noreply, state |> persist_dirty_data(conf)}
+  end
+
+  def handle_info({:idle_timeout}, state = %{persist_timer: timer}) when not is_nil(timer) do
+    # do not time out if a persist timer is still running
+    {:noreply, state}
+  end
+
+  def handle_info({:idle_timeout}, state) do
+    # state |> persist_dirty_data(conf)
+
+    idle_time =
+      :os.system_time(:millisecond) - state.last_interaction_ts
+
+    if idle_time > @default_lifetime_ms do
+      {:stop, :normal, state}
+    else
+      {:noreply, %{state | idle_timer: nil} |> ensure_idle_timer_is_running()}
+    end
   end
 
   def handle_info(:fetch_data, state) do
@@ -189,15 +219,41 @@ defmodule MavuBuckets.BucketGenServer do
   end
 
   @impl true
-  def terminate(reason, _state) do
-    MavuUtils.log(
-      reason,
-      "#{__MODULE__} exits with reason",
-      :warn
-    )
-  end
+  def terminate(:normal, state), do: nil
+
+  def terminate(reason, state),
+    do: MavuUtils.log(reason, "Bucket '#{state.bkid}' exits with reason", :warning)
 
   ## Private
+
+  defp record_activity_in_state(store) do
+    %{store | last_interaction_ts: :os.system_time(:millisecond)}
+    |> ensure_idle_timer_is_running()
+  end
+
+  defp ensure_idle_timer_is_running(state = %{idle_timer: timer}) when not is_nil(timer),
+    do: state
+
+  defp ensure_idle_timer_is_running(state) do
+    case lifetime_ms(state) do
+      :infinity ->
+        # no idle timer needed if lifetime = :infinity
+        state
+
+      lifetime_ms ->
+        # start idle timer if no one is running at the moment
+
+        %{
+          state
+          | idle_timer:
+              Process.send_after(
+                self(),
+                {:idle_timeout},
+                lifetime_ms
+              )
+        }
+    end
+  end
 
   defp handle_conf_in_state(state, conf) when is_map(conf) do
     new_state =
@@ -260,13 +316,13 @@ defmodule MavuBuckets.BucketGenServer do
         # if persist_interval has passed since last persist, persist immediately:
         # MavuUtils.log("persist now,  #{time_passed} > #{@persist_interval_ms} #clcyan", :info)
 
-        save_data_to_db(state.bkid, state.data, conf)
+        save_data_to_db(state, conf)
         %{state | persist_timer: nil, last_persist_ts: :os.system_time(:millisecond)}
       end
   end
 
   defp repo(conf \\ %{}) do
-    get_conf_val(conf, :repo)
+    get_conf_val(conf, :repo) || MyApp.Repo
   end
 
   defp via_tuple(bkid),
@@ -293,17 +349,28 @@ defmodule MavuBuckets.BucketGenServer do
     end
   end
 
-  def save_data_to_db(_bkid, _data, %{skip_db: true}), do: :ok
+  def save_data_to_db(_state, %{skip_db: true}), do: :ok
 
-  def save_data_to_db(bkid, data, conf) when is_map(conf) do
+  def save_data_to_db(state = %{bkid: bkid, data: data}, conf) when is_map(conf) do
     repo = repo(conf)
+
+    state
+
+    encoded_state = data |> Bertex.encode()
+
+    {repo_running?(repo), repo, conf}
 
     if repo_running?(repo) do
       case repo.get_by(BucketStore, bkid: bkid) do
         nil -> %BucketStore{bkid: bkid}
         rec -> rec
       end
-      |> BucketStore.changeset(%{state: data |> Bertex.encode()})
+      |> BucketStore.changeset(%{
+        state: encoded_state,
+        persistence_level: state.persistence_level,
+        protect_until: DateTime.utc_now() |> DateTime.add(state.protect_for_s),
+        size: byte_size(encoded_state)
+      })
       |> repo.insert_or_update()
     end
 
