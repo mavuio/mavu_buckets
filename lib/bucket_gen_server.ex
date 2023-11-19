@@ -9,11 +9,14 @@ defmodule MavuBuckets.BucketGenServer do
 
   @registry :mavu_buckets_registry
   @persist_interval_ms 2000
+  @protect_for_s 3600
 
   defstruct bkid: nil,
             data: %{},
             last_persist_ts: 0,
-            persist_timer: nil
+            persist_timer: nil,
+            protect_for_s: @protect_for_s,
+            persistence_level: 10
 
   use Accessible
 
@@ -94,6 +97,7 @@ defmodule MavuBuckets.BucketGenServer do
         ],
         value
       )
+      |> handle_conf_in_state(conf)
 
     state =
       if(state.data !== old_state.data) do
@@ -124,6 +128,7 @@ defmodule MavuBuckets.BucketGenServer do
         ],
         callback
       )
+      |> handle_conf_in_state(conf)
 
     state =
       if(state.data !== old_state.data) do
@@ -142,7 +147,9 @@ defmodule MavuBuckets.BucketGenServer do
   end
 
   def handle_call({:set_data, data, conf}, _from, old_state) when is_map(conf) do
-    state = put_in(old_state, [:data], data)
+    state =
+      put_in(old_state, [:data], data)
+      |> handle_conf_in_state(conf)
 
     state =
       if(state.data !== old_state.data) do
@@ -191,6 +198,29 @@ defmodule MavuBuckets.BucketGenServer do
   end
 
   ## Private
+
+  defp handle_conf_in_state(state, conf) when is_map(conf) do
+    new_state =
+      if is_integer(conf[:persistence_level]) && conf.persistence_level != state.persistence_level &&
+           conf[:persistence_level] in [1, 10, 100] do
+        %{state | persistence_level: conf[:persistence_level]}
+      else
+        state
+      end
+
+    new_state =
+      case conf[:protect_for] do
+        {n, :month} when is_number(n) -> %{state | protect_for_s: round(n * 86400 * 30.5)}
+        {n, :week} when is_number(n) -> %{state | protect_for_s: round(n * 86400 * 7)}
+        {n, :day} when is_number(n) -> %{state | protect_for_s: round(n * 86400)}
+        {n, :min} when is_number(n) -> %{state | protect_for_s: round(n * 3600)}
+        {n, :sec} when is_number(n) -> %{state | protect_for_s: round(n)}
+        n when is_number(n) -> %{state | protect_for_s: round(n)}
+        nil -> new_state
+      end
+
+    new_state
+  end
 
   defp persist_dirty_data(state, conf) do
     time_passed = :os.system_time(:millisecond) - state.last_persist_ts
