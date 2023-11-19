@@ -8,7 +8,7 @@ defmodule MavuBuckets.BucketGenServer do
   import MavuBuckets, only: [get_conf_val: 2]
 
   @registry :mavu_buckets_registry
-  @persist_interval_ms 5000
+  @persist_interval_ms 2000
 
   defstruct bkid: nil,
             data: %{},
@@ -228,7 +228,7 @@ defmodule MavuBuckets.BucketGenServer do
         end
       else
         # if persist_interval has passed since last persist, persist immediately:
-        MavuUtils.log("persist now,  #{time_passed} > #{@persist_interval_ms} #clcyan", :info)
+        # MavuUtils.log("persist now,  #{time_passed} > #{@persist_interval_ms} #clcyan", :info)
 
         save_data_to_db(state.bkid, state.data, conf)
         %{state | persist_timer: nil, last_persist_ts: :os.system_time(:millisecond)}
