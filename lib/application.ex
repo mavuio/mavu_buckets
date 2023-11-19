@@ -5,6 +5,7 @@ defmodule MavuBuckets.Application do
   def start(_type, _args) do
     children = [
       {MavuBuckets.BucketSupervisor, []},
+      {MavuBuckets.GarbageCollector, []},
       {Registry, [keys: :unique, name: :mavu_buckets_registry]}
     ]
 

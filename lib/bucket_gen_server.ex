@@ -8,9 +8,12 @@ defmodule MavuBuckets.BucketGenServer do
   import MavuBuckets, only: [get_conf_val: 2]
 
   @registry :mavu_buckets_registry
+  @persist_interval_ms 5000
 
   defstruct bkid: nil,
-            data: %{}
+            data: %{},
+            last_persist_ts: 0,
+            persist_timer: nil
 
   use Accessible
 
@@ -92,14 +95,17 @@ defmodule MavuBuckets.BucketGenServer do
         value
       )
 
-    if(state !== old_state) do
-      LiveUpdates.notify_live_view(
-        state.bkid,
-        {:mavu_bucket, state.bkid, :set_value, value}
-      )
+    state =
+      if(state.data !== old_state.data) do
+        LiveUpdates.notify_live_view(
+          state.bkid,
+          {:mavu_bucket, state.bkid, :set_value, value}
+        )
 
-      save_data_to_db(state.bkid, state.data, conf)
-    end
+        state |> persist_dirty_data(conf)
+      else
+        state
+      end
 
     response = :ok
     {:reply, response, state}
@@ -119,14 +125,17 @@ defmodule MavuBuckets.BucketGenServer do
         callback
       )
 
-    if(state !== old_state) do
-      LiveUpdates.notify_live_view(
-        state.bkid,
-        {:mavu_bucket, state.bkid, :update_value, nil}
-      )
+    state =
+      if(state.data !== old_state.data) do
+        LiveUpdates.notify_live_view(
+          state.bkid,
+          {:mavu_bucket, state.bkid, :update_value, nil}
+        )
 
-      save_data_to_db(state.bkid, state.data, conf)
-    end
+        state |> persist_dirty_data(conf)
+      else
+        state
+      end
 
     response = :ok
     {:reply, response, state}
@@ -135,14 +144,17 @@ defmodule MavuBuckets.BucketGenServer do
   def handle_call({:set_data, data, conf}, _from, old_state) when is_map(conf) do
     state = put_in(old_state, [:data], data)
 
-    if(state !== old_state) do
-      LiveUpdates.notify_live_view(
-        state.bkid,
-        {:mavu_bucket, state.bkid, :set_data, nil}
-      )
+    state =
+      if(state.data !== old_state.data) do
+        LiveUpdates.notify_live_view(
+          state.bkid,
+          {:mavu_bucket, state.bkid, :set_data, nil}
+        )
 
-      save_data_to_db(state.bkid, state.data, conf)
-    end
+        state |> persist_dirty_data(conf)
+      else
+        state
+      end
 
     response = :ok
     {:reply, response, state}
@@ -152,6 +164,12 @@ defmodule MavuBuckets.BucketGenServer do
   fetch data from db:
   """
   @impl GenServer
+
+  def handle_info({:persist_dirty_data, conf, _call_ts}, state) do
+    # MavuUtils.log("persist_dirty_data timer called #clcyan", :info)
+    {:noreply, state |> persist_dirty_data(conf)}
+  end
+
   def handle_info(:fetch_data, state) do
     updated_state =
       fetch_data_from_db(state.bkid)
@@ -173,6 +191,49 @@ defmodule MavuBuckets.BucketGenServer do
   end
 
   ## Private
+
+  defp persist_dirty_data(state, conf) do
+    time_passed = :os.system_time(:millisecond) - state.last_persist_ts
+
+    state =
+      if time_passed <= @persist_interval_ms do
+        # if not enough time passed since last db-save,
+        # ➜ create timer if it doesn't exists yet
+
+        case state.persist_timer do
+          nil ->
+            # MavuUtils.log(
+            #   "persist later,  #{time_passed} not <= #{@persist_interval_ms}, call again in #{@persist_interval_ms - time_passed} #clcyan",
+            #   :info
+            # )
+
+            %{
+              state
+              | persist_timer:
+                  Process.send_after(
+                    self(),
+                    {:persist_dirty_data, conf, :os.system_time(:millisecond)},
+                    @persist_interval_ms - time_passed
+                  )
+            }
+
+          _ ->
+            state.persist_timer
+            # |> MavuUtils.log(
+            #   "persist later,  another timer already running #clcyan",
+            #   :info
+            # )
+
+            state
+        end
+      else
+        # if persist_interval has passed since last persist, persist immediately:
+        MavuUtils.log("persist now,  #{time_passed} > #{@persist_interval_ms} #clcyan", :info)
+
+        save_data_to_db(state.bkid, state.data, conf)
+        %{state | persist_timer: nil, last_persist_ts: :os.system_time(:millisecond)}
+      end
+  end
 
   defp repo(conf \\ %{}) do
     get_conf_val(conf, :repo)
