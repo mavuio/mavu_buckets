@@ -281,47 +281,46 @@ defmodule MavuBuckets.BucketGenServer do
   defp persist_dirty_data(state, conf) do
     time_passed = :os.system_time(:millisecond) - state.last_persist_ts
 
-    state =
-      if time_passed <= @persist_interval_ms do
-        # if not enough time passed since last db-save,
-        # ➜ create timer if it doesn't exists yet
+    if time_passed <= @persist_interval_ms do
+      # if not enough time passed since last db-save,
+      # ➜ create timer if it doesn't exists yet
 
-        case state.persist_timer do
-          nil ->
-            # MavuUtils.log(
-            #   "persist later,  #{time_passed} not <= #{@persist_interval_ms}, call again in #{@persist_interval_ms - time_passed} #clcyan",
-            #   :info
-            # )
+      case state.persist_timer do
+        nil ->
+          # MavuUtils.log(
+          #   "persist later,  #{time_passed} not <= #{@persist_interval_ms}, call again in #{@persist_interval_ms - time_passed} #clcyan",
+          #   :info
+          # )
 
-            %{
-              state
-              | persist_timer:
-                  Process.send_after(
-                    self(),
-                    {:persist_dirty_data, conf, :os.system_time(:millisecond)},
-                    @persist_interval_ms - time_passed
-                  )
-            }
-
-          _ ->
-            state.persist_timer
-            # |> MavuUtils.log(
-            #   "persist later,  another timer already running #clcyan",
-            #   :info
-            # )
-
+          %{
             state
-        end
-      else
-        # if persist_interval has passed since last persist, persist immediately:
-        # MavuUtils.log("persist now,  #{time_passed} > #{@persist_interval_ms} #clcyan", :info)
+            | persist_timer:
+                Process.send_after(
+                  self(),
+                  {:persist_dirty_data, conf, :os.system_time(:millisecond)},
+                  @persist_interval_ms - time_passed
+                )
+          }
 
-        save_data_to_db(state, conf)
-        %{state | persist_timer: nil, last_persist_ts: :os.system_time(:millisecond)}
+        _ ->
+          state.persist_timer
+          # |> MavuUtils.log(
+          #   "persist later,  another timer already running #clcyan",
+          #   :info
+          # )
+
+          state
       end
+    else
+      # if persist_interval has passed since last persist, persist immediately:
+      # MavuUtils.log("persist now,  #{time_passed} > #{@persist_interval_ms} #clcyan", :info)
+
+      save_data_to_db(state, conf)
+      %{state | persist_timer: nil, last_persist_ts: :os.system_time(:millisecond)}
+    end
   end
 
-  defp repo(conf \\ %{}) do
+  def repo(conf \\ %{}) do
     get_conf_val(conf, :repo) || MyApp.Repo
   end
 
@@ -354,11 +353,7 @@ defmodule MavuBuckets.BucketGenServer do
   def save_data_to_db(state = %{bkid: bkid, data: data}, conf) when is_map(conf) do
     repo = repo(conf)
 
-    state
-
     encoded_state = data |> Bertex.encode()
-
-    {repo_running?(repo), repo, conf}
 
     if repo_running?(repo) do
       case repo.get_by(BucketStore, bkid: bkid) do
