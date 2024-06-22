@@ -193,7 +193,7 @@ defmodule MavuBuckets.GarbageCollector do
       if n_still_able_to_prune > 0 do
         size_used = get_items_size(type: :query_all, human_readable: false)
         size_limit = get_conf_val(:bytes_to_keep)
-        size_needed_pruned = size_used
+        size_needed_pruned = size_used - size_limit
 
         if size_needed_pruned > 0 do
           possible_items_to_prune =
