@@ -154,7 +154,9 @@ defmodule MavuBuckets.BucketGenServer do
         state
       end
 
-    response = :ok
+    response =
+      get_in(state, [:data | get_key_parts(key)])
+
     {:reply, response, state |> record_activity_in_state()}
   end
 
