@@ -9,7 +9,7 @@ defmodule MavuBuckets.BucketGenServer do
 
   @registry :mavu_buckets_registry
   @persist_interval_ms 2000
-  @protect_for_s 3600
+  @protect_for_s 3600oil
   @default_lifetime_ms 3600_000
 
   defstruct bkid: nil,
