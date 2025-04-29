@@ -55,7 +55,7 @@ defmodule MavuBuckets.BucketGenServer do
     :infinity
   end
 
-  def lifetime_ms(_state = %{lifetime_ms: lifetime_ms}) when do
+  def lifetime_ms(_state = %{lifetime_ms: lifetime_ms}) when is_integer(lifetime_ms) do
     lifetime_ms
   end
 
@@ -279,16 +279,15 @@ defmodule MavuBuckets.BucketGenServer do
         state
       end
 
-      case conf[:protect_for] do
-        {n, :month} when is_number(n) -> %{state | protect_for_s: round(n * 86400 * 30.5)}
-        {n, :week} when is_number(n) -> %{state | protect_for_s: round(n * 86400 * 7)}
-        {n, :day} when is_number(n) -> %{state | protect_for_s: round(n * 86400)}
-        {n, :min} when is_number(n) -> %{state | protect_for_s: round(n * 3600)}
-        {n, :sec} when is_number(n) -> %{state | protect_for_s: round(n)}
-        n when is_number(n) -> %{state | protect_for_s: round(n)}
-        nil -> state
-      end
-
+    case conf[:protect_for] do
+      {n, :month} when is_number(n) -> %{state | protect_for_s: round(n * 86400 * 30.5)}
+      {n, :week} when is_number(n) -> %{state | protect_for_s: round(n * 86400 * 7)}
+      {n, :day} when is_number(n) -> %{state | protect_for_s: round(n * 86400)}
+      {n, :min} when is_number(n) -> %{state | protect_for_s: round(n * 3600)}
+      {n, :sec} when is_number(n) -> %{state | protect_for_s: round(n)}
+      n when is_number(n) -> %{state | protect_for_s: round(n)}
+      nil -> state
+    end
   end
 
   defp persist_dirty_data(state, conf) do
