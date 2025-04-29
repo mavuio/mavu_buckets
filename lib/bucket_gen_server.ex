@@ -19,6 +19,7 @@ defmodule MavuBuckets.BucketGenServer do
             persist_timer: nil,
             idle_timer: nil,
             protect_for_s: @protect_for_s,
+            lifetime_ms: @default_lifetime_ms,
             persistence_level: 10
 
   use Accessible
@@ -52,6 +53,10 @@ defmodule MavuBuckets.BucketGenServer do
   ## conf
   def lifetime_ms(_state = %{persistence_level: 100}) do
     :infinity
+  end
+
+  def lifetime_ms(_state = %{lifetime_ms: lifetime_ms}) when is_integer(lifetime_ms) do
+    lifetime_ms
   end
 
   def lifetime_ms(_state) do
@@ -202,7 +207,7 @@ defmodule MavuBuckets.BucketGenServer do
     idle_time =
       :os.system_time(:millisecond) - state.last_interaction_ts
 
-    if idle_time > @default_lifetime_ms do
+    if idle_time > lifetime_ms(state) do
       {:stop, :normal, state}
     else
       {:noreply, %{state | idle_timer: nil} |> ensure_idle_timer_is_running()}
@@ -264,6 +269,14 @@ defmodule MavuBuckets.BucketGenServer do
         %{state | persistence_level: conf[:persistence_level]}
       else
         state
+      end
+
+    new_state =
+      if is_integer(conf[:lifetime_ms]) && conf.lifetime_ms != new_state.lifetime_ms &&
+           is_integer(conf[:lifetime_ms]) do
+        %{new_state | lifetime_ms: conf[:lifetime_ms]}
+      else
+        new_state
       end
 
     new_state =
