@@ -33,6 +33,9 @@ defmodule MavuBuckets.BucketGenServer do
   def get_data(bkid, conf \\ []),
     do: GenServer.call(get_pid(bkid), {:get_data, conf |> Enum.into(%{})})
 
+  def get_state(bkid, conf \\ []),
+    do: GenServer.call(get_pid(bkid), {:get_state, conf |> Enum.into(%{})})
+
   def get_value(bkid, key, default \\ nil, conf \\ [])
 
   def get_value(nil, _, _, _), do: nil
@@ -88,6 +91,10 @@ defmodule MavuBuckets.BucketGenServer do
   def handle_call({:get_data, conf}, _from, state) when is_map(conf) do
     response = state.data
     {:reply, response, state |> record_activity_in_state()}
+  end
+
+  def handle_call({:get_state, conf}, _from, state) when is_map(conf) do
+    {:reply, state, state}
   end
 
   def handle_call({:get_value, key, default, conf}, _from, state) when is_map(conf) do

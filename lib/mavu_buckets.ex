@@ -32,6 +32,8 @@ defmodule MavuBuckets do
   # public API:
   defdelegate get_data(bkid, conf \\ []), to: BucketGenServer
 
+  defdelegate get_state(bkid, conf \\ []), to: BucketGenServer
+
   defdelegate set_data(bkid, data, conf \\ []), to: BucketGenServer
 
   defdelegate set_value(bkid, key, value, conf \\ []), to: BucketGenServer
