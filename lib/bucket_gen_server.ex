@@ -204,8 +204,9 @@ defmodule MavuBuckets.BucketGenServer do
   end
 
   def handle_info({:idle_timeout}, state = %{persist_timer: timer}) when not is_nil(timer) do
-    # do not time out if a persist timer is still running
-    {:noreply, state}
+    # do not time out if a persist timer is still running, but clear the stale
+    # idle_timer ref so ensure_idle_timer_is_running schedules a fresh one
+    {:noreply, %{state | idle_timer: nil} |> ensure_idle_timer_is_running()}
   end
 
   def handle_info({:idle_timeout}, state) do
