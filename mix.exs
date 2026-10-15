@@ -1,7 +1,7 @@
 defmodule MavuBuckets.MixProject do
   use Mix.Project
 
-  @version "1.1.11"
+  @version "1.1.12"
   def project do
     [
       app: :mavu_buckets,
@@ -34,6 +34,8 @@ defmodule MavuBuckets.MixProject do
       {:bertex, "~> 1.3"},
       {:ecto, ">= 3.0.0"},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
+      # host apps provide mavu_utils; tests need it to boot the application
+      {:mavu_utils, ">= 0.0.0", only: :test},
       {:phoenix_pubsub, "~> 2.1"}
     ]
   end
